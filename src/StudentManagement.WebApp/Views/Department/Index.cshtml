@@ -1,0 +1,31 @@
+﻿@{
+    ViewData["Title"] = "Danh sách các khoa";
+}
+
+<!-- Khai báo app và controller -->
+<div ng-app="StudentManagementApp" ng-controller="DepartmentController">
+    <h2>Danh sách các khoa</h2>
+
+    <div style="margin-bottom: 15px;">
+        <input type="text" ng-model="searchKeyword" placeholder="Tìm kiếm..." />
+        <button ng-click="actions.search()">Tìm kiếm</button>
+        <button ng-click="actions.refresh()">Làm mới</button>
+    </div>
+
+    <table border="1" cellpadding="6" cellspacing="0" style="width: 100%;">
+        <thead>
+            <tr>
+                <th>Mã Khoa</th>
+                <th>Tên Khoa</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr ng-repeat="dept in departments">
+                <td>{{dept.departmentCode}}</td>
+                <td>{{dept.departmentName}}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div ng-if="loading">Đang tải dữ liệu...</div>
+</div>

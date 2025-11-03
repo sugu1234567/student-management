@@ -1,0 +1,239 @@
+﻿@{
+    ViewData["Title"] = "Quản lý Điểm";
+}
+
+<div ng-controller="GradeController">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-chart-line"></i> Quản lý Điểm</h2>
+        <button class="btn btn-primary"
+                ng-if="role === 1 || role === 2"
+                ng-click="actions.openAddForm()"
+                ng-disabled="loading">
+            <i class="fas fa-plus"></i> Nhập điểm
+        </button>
+    </div>
+
+    <!-- Filter -->
+    <div ng-if="role === 1 || role === 2"
+         class="card mb-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <label class="form-label">Lọc theo Lớp:</label>
+                    <select class="form-select"
+                            ng-model="filterClassId"
+                            ng-change="actions.filterGrades()">
+                        <option value="">-- Tất cả lớp --</option>
+                        <option ng-repeat="class in classes" value="{{class.classId}}">
+                            {{class.className}}
+                        </option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Lọc theo Môn học:</label>
+                    <select class="form-select"
+                            ng-model="filterSubjectId"
+                            ng-change="actions.filterGrades()">
+                        <option value="">-- Tất cả môn học --</option>
+                        <option ng-repeat="subject in subjects" value="{{subject.subjectId}}">
+                            {{subject.subjectName}}
+                        </option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Lọc theo Sinh viên:</label>
+                    <select class="form-select"
+                            ng-model="filterStudentId"
+                            ng-change="actions.filterGrades()">
+                        <option value="">-- Tất cả sinh viên --</option>
+                        <option ng-repeat="student in students" value="{{student.studentId}}">
+                            {{student.fullName}} ({{student.studentCode}})
+                        </option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">&nbsp;</label>
+                    <button class="btn btn-secondary w-100" ng-click="actions.refresh()" ng-disabled="loading">
+                        <i class="fas fa-sync-alt"></i> Làm mới
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div ng-show="loading" class="text-center my-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Đang tải...</span>
+        </div>
+        <p class="mt-2">Đang xử lý...</p>
+    </div>
+
+    <!-- Grades Table -->
+    <div class="card" ng-show="!loading">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped">
+                    <thead class="table-primary">
+                        <tr>
+                            <th style="width: 5%">STT</th>
+                            <th style="width: 15%">Mã SV</th>
+                            <th style="width: 20%">Họ tên</th>
+                            <th style="width: 20%">Môn học</th>
+                            <th style="width: 10%">Điểm</th>
+                            <th style="width: 10%">Xếp loại</th>
+                            <th style="width: 10%" class="text-center">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="grade in grades track by grade.gradeId">
+                            <td>{{$index + 1}}</td>
+                            <td><strong>{{grade.studentCode}}</strong></td>
+                            <td>{{grade.studentName}}</td>
+                            <td>{{grade.subjectName}}</td>
+                            <td>{{grade.score}}</td>
+
+                            <td>
+                                <span class="badge bg-{{actions.getGradeRank(grade.score).class}}">
+                                    {{actions.getGradeRank(grade.score).text}}
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                <button class="btn btn-sm btn-info"
+                                        ng-if="role === 1 || role === 2"
+                                        ng-click="actions.openEditForm(grade)"
+                                        title="Sửa">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-danger ms-1"
+                                        ng-if="role === 1 || role === 2"
+                                        ng-click="actions.delete(grade.gradeId)"
+                                        title="Xóa">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+
+                                <button class="btn btn-sm btn-primary"
+                                        ng-click="actions.viewDetail(grade.gradeId)"
+                                        title="Xem chi tiết">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr ng-show="grades.length === 0">
+                            <td colspan="9" class="text-center text-muted py-4">
+                                <i class="fas fa-inbox fa-3x mb-3"></i>
+                                <p>Không có dữ liệu điểm</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Add/Edit Grade -->
+    <div class="modal fade" id="gradeModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-chart-line"></i>
+                        {{isEdit ? 'Cập nhật điểm' : 'Nhập điểm mới'}}
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form name="gradeForm" novalidate>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Sinh viên <span class="text-danger">*</span></label>
+                                <select class="form-select" ng-model="grade.studentId" required>
+                                    <option value="0">-- Chọn sinh viên --</option>
+                                    <option ng-repeat="student in students" value="{{student.studentId}}">
+                                        {{student.fullName}} ({{student.studentCode}})
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Môn học <span class="text-danger">*</span></label>
+                                <select class="form-select" ng-model="grade.subjectId" required>
+                                    <option value="0">-- Chọn môn học --</option>
+                                    <option ng-repeat="subject in subjects" value="{{subject.subjectId}}">
+                                        {{subject.subjectName}} ({{subject.subjectCode}})
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Điểm giữa kỳ <span class="text-danger">*</span></label>
+                                <input type="number"
+                                       class="form-control"
+                                       ng-model="grade.midtermScore"
+                                       placeholder="0.0"
+                                       min="0"
+                                       max="10"
+                                       step="0.1"
+                                       required>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Điểm cuối kỳ <span class="text-danger">*</span></label>
+                                <input type="number"
+                                       class="form-control"
+                                       ng-model="grade.finalScore"
+                                       placeholder="0.0"
+                                       min="0"
+                                       max="10"
+                                       step="0.1"
+                                       required>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Điểm trung bình</label>
+                                <input type="text"
+                                       class="form-control"
+                                       ng-model="grade.averageScore"
+                                       readonly
+                                       style="background-color: #e9ecef;">
+                            </div>
+                        </div>
+                        <div class="alert alert-info mb-0">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Công thức:</strong> Điểm TB = (Điểm GK × 40%) + (Điểm CK × 60%)
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" ng-click="actions.cancel()">
+                        <i class="fas fa-times"></i> Hủy
+                    </button>
+                    <button type="button" class="btn btn-primary" ng-click="actions.save()" ng-disabled="loading">
+                        <i class="fas fa-save"></i> {{isEdit ? 'Cập nhật' : 'Lưu điểm'}}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .table th {
+        background-color: #007bff;
+        color: white;
+        font-weight: 600;
+    }
+
+    .btn-sm {
+        padding: 0.25rem 0.5rem;
+    }
+
+    .card {
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        border: none;
+    }
+
+    .badge {
+        font-size: 0.85rem;
+        padding: 0.35rem 0.65rem;
+    }
+</style>

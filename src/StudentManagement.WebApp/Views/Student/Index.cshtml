@@ -1,0 +1,317 @@
+﻿@{
+    ViewData["Title"] = "Quản lý Sinh viên";
+}
+
+<div ng-controller="StudentController">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-user-graduate"></i> Quản lý Sinh viên</h2>
+        <button class="btn btn-primary" ng-click="actions.openAddForm()" ng-disabled="loading">
+            <i class="fas fa-plus"></i> Thêm sinh viên
+        </button>
+    </div>
+
+    <!-- Search and Filter -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        <input type="text"
+                               class="form-control"
+                               placeholder="Tìm kiếm theo mã, tên, email, số điện thoại..."
+                               ng-model="searchKeyword"
+                               ng-keypress="$event.keyCode == 13 && actions.search()">
+                        <button class="btn btn-primary" ng-click="actions.search()" ng-disabled="loading">
+                            Tìm kiếm
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-4">
+                    <label class="form-label">Lọc theo Lớp:</label>
+                    <select class="form-select"
+                            ng-model="searchClassId"
+                            ng-change="actions.filterByClass()">
+                        <option value="">-- Tất cả lớp --</option>
+                        <option ng-repeat="class in classes" value="{{class.classId}}">
+                            {{class.className}}
+                        </option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Lọc theo Khoa:</label>
+                    <select class="form-select"
+                            ng-model="searchDepartmentId"
+                            ng-change="actions.search()">
+                        <option value="">-- Tất cả khoa --</option>
+                        <option ng-repeat="dept in departments" value="{{dept.departmentId}}">
+                            {{dept.departmentName}}
+                        </option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">&nbsp;</label>
+                    <button class="btn btn-secondary w-100" ng-click="actions.refresh()" ng-disabled="loading">
+                        <i class="fas fa-sync-alt"></i> Làm mới
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div ng-show="loading" class="text-center my-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Đang tải...</span>
+        </div>
+        <p class="mt-2">Đang xử lý...</p>
+    </div>
+
+    <!-- Students Table -->
+    <div class="card" ng-show="!loading">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped">
+                    <thead class="table-primary">
+                        <tr>
+                            <th style="width: 5%">STT</th>
+                            <th style="width: 10%">Mã SV</th>
+                            <th style="width: 18%">Họ và tên</th>
+                            <th style="width: 10%">Ngày sinh</th>
+                            <th style="width: 7%">Giới tính</th>
+                            <th style="width: 15%">Email</th>
+                            <th style="width: 10%">Số ĐT</th>
+                            <th style="width: 12%">Lớp</th>
+                            <th style="width: 13%" class="text-center">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="student in buildin.getPaginatedStudents() track by student.studentId">
+                            <td>{{(currentPage - 1) * itemsPerPage + $index + 1}}</td>
+                            <td><strong>{{student.studentCode}}</strong></td>
+                            <td>{{student.fullName}}</td>
+                            <td>{{student.dateOfBirth | date:'dd/MM/yyyy'}}</td>
+                            <td>
+                                <span class="text-center">
+                                    {{student.gender}}
+                                </span>
+                            </td>
+                            <td>
+                                <a href="mailto:{{student.email}}">{{student.email}}</a>
+                            </td>
+                            <td>{{student.phone}}</td>
+                            <td>{{student.className || 'N/A'}}</td>
+                            <td class="text-center">
+                                <button class="btn btn-sm btn-info"
+                                        ng-click="actions.openEditForm(student.studentId)"
+                                        title="Sửa">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-danger ms-1"
+                                        ng-click="actions.delete(student.studentId)"
+                                        title="Xóa">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr ng-show="filteredStudents.length === 0">
+                            <td colspan="9" class="text-center text-muted py-4">
+                                <i class="fas fa-inbox fa-3x mb-3"></i>
+                                <p>Không có dữ liệu sinh viên</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="d-flex justify-content-between align-items-center mt-3" ng-show="filteredStudents.length > 0">
+                <div>
+                    Hiển thị {{(currentPage - 1) * itemsPerPage + 1}} - {{currentPage * itemsPerPage > filteredStudents.length ? filteredStudents.length : currentPage * itemsPerPage}}
+                    trong tổng số {{filteredStudents.length}} sinh viên
+                </div>
+                <nav>
+                    <ul class="pagination mb-0">
+                        <li class="page-item" ng-class="{disabled: currentPage === 1}">
+                            <a class="page-link" href="#" ng-click="actions.previousPage()">Trước</a>
+                        </li>
+                        <li class="page-item"
+                            ng-repeat="page in [] | range:buildin.getTotalPages()"
+                            ng-class="{active: page === currentPage}">
+                            <a class="page-link" href="#" ng-click="actions.goToPage(page)">{{page}}</a>
+                        </li>
+                        <li class="page-item" ng-class="{disabled: currentPage === buildin.getTotalPages()}">
+                            <a class="page-link" href="#" ng-click="actions.nextPage()">Sau</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Add/Edit Student -->
+    <div class="modal fade" id="studentModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-user-graduate"></i>
+                        {{isEdit ? 'Cập nhật sinh viên' : 'Thêm mới sinh viên'}}
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form name="studentForm" novalidate>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Mã sinh viên <span class="text-danger">*</span></label>
+                                <input type="text"
+                                       class="form-control"
+                                       ng-model="student.studentCode"
+                                       placeholder="Nhập mã sinh viên"
+                                       required>
+                            </div>
+                            <div class="col-md-6 mb-3" ng-if ="isEdit">
+                                <label class="form-label">UserID <span class="text-danger">*</span></label>
+                                <input type="text"
+                                       class="form-control"
+                                       ng-model="student.userId"
+                                        ng-disabled="true">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Họ và tên <span class="text-danger">*</span></label>
+                                <input type="text"
+                                       class="form-control"
+                                       ng-model="student.fullName"
+                                       placeholder="Nhập họ và tên"
+                                       required>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Ngày sinh <span class="text-danger">*</span></label>
+                                <input type="date"
+                                       class="form-control"
+                                       ng-model="student.dateOfBirth"
+                                       required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Giới tính <span class="text-danger">*</span></label>
+                                <select class="form-select" ng-model="student.gender" required>
+                                    <option value="1">Nam</option>
+                                    <option value="2">Nữ</option>
+                                    <option value="3">Khác</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Email <span class="text-danger">*</span></label>
+                                <input type="email"
+                                       class="form-control"
+                                       ng-model="student.email"
+                                       placeholder="example@email.com"
+                                       required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Số điện thoại <span class="text-danger">*</span></label>
+                                <input type="text"
+                                       class="form-control"
+                                       ng-model="student.phone"
+                                       placeholder="0123456789"
+                                       required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Địa chỉ</label>
+                            <textarea class="form-control"
+                                      ng-model="student.address"
+                                      rows="2"
+                                      placeholder="Nhập địa chỉ"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Lớp <span class="text-danger">*</span></label>
+                            <select class="form-select" ng-model="student.classId" required>
+                                <option value="0">-- Chọn lớp --</option>
+                                <option ng-repeat="class in classes" value="{{class.classId}}">
+                                    {{class.className}}
+                                </option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">UserName</label>
+                            <input  class="form-control"
+                                        type = "text"
+                                        ng-model="student.username"
+                                        rows="2"
+                                        placeholder="Nhập username"></input>
+                        </div>
+                        <div class="mb-3" ng-if = "!isEdit">
+                            <label class="form-label">Password</label>
+                            <input      type="password"
+                                        class="form-control"
+                                        ng-model="student.password"
+                                        rows="2"
+                                        placeholder="Nhập mat khau"></input>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" ng-click="actions.cancel()">
+                        <i class="fas fa-times"></i> Hủy
+                    </button>
+                    <button type="button" class="btn btn-primary" ng-click="actions.save()" ng-disabled="loading">
+                        <i class="fas fa-save"></i> {{isEdit ? 'Cập nhật' : 'Thêm mới'}}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter for pagination -->
+<script>
+    angular.module('StudentManagementApp').filter('range', function() {
+        return function(input, total) {
+            total = parseInt(total);
+            for (var i = 1; i <= total; i++) {
+                input.push(i);
+            }
+            return input;
+        };
+    });
+</script>
+
+<style>
+    .table th {
+        background-color: #007bff;
+        color: white;
+        font-weight: 600;
+    }
+
+    .btn-sm {
+        padding: 0.25rem 0.5rem;
+    }
+
+    .card {
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        border: none;
+    }
+
+    .pagination .page-link {
+        color: #007bff;
+    }
+
+    .pagination .active .page-link {
+        background-color: #007bff;
+        border-color: #007bff;
+    }
+
+    .badge {
+        font-size: 0.85rem;
+        padding: 0.35rem 0.65rem;
+    }
+</style>

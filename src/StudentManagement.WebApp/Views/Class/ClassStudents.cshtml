@@ -1,0 +1,131 @@
+﻿@{
+    ViewData["Title"] = "Danh sách Sinh viên";
+}
+
+<div ng-controller="ClassController">
+    <!-- Header -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <button class="btn btn-secondary" ng-click="actions.goBack()">
+                        <i class="fas fa-arrow-left"></i> Quay lại
+                    </button>
+                    <h3 class="d-inline ms-3 mb-0">
+                        <i class="fas fa-users"></i> Danh sách Sinh viên - Lớp: <strong class="text-primary">{{className}}</strong>
+                    </h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-10">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        <input type="text"
+                               class="form-control"
+                               placeholder="Tìm kiếm theo mã, tên, email, số điện thoại..."
+                               ng-model="searchKeyword"
+                               ng-keypress="$event.keyCode == 13 && actions.search()">
+                        <button class="btn btn-primary" ng-click="actions.search()" ng-disabled="loading">
+                            Tìm kiếm
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-secondary w-100" ng-click="actions.refresh()" ng-disabled="loading">
+                        <i class="fas fa-sync-alt"></i> Làm mới
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div ng-show="loading" class="text-center my-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Đang tải...</span>
+        </div>
+        <p class="mt-2">Đang tải danh sách sinh viên...</p>
+    </div>
+
+    <!-- Students Table -->
+    <div class="card" ng-show="!loading">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped">
+                    <thead class="table-primary">
+                        <tr>
+                            <th style="width: 5%">STT</th>
+                            <th style="width: 12%">Mã SV</th>
+                            <th style="width: 20%">Họ và tên</th>
+                            <th style="width: 10%">Ngày sinh</th>
+                            <th style="width: 8%">Giới tính</th>
+                            <th style="width: 18%">Email</th>
+                            <th style="width: 12%">Số điện thoại</th>
+                            <th style="width: 15%" class="text-center">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="student in filteredStudents track by student.studentId">
+                            <td>{{$index + 1}}</td>
+                            <td><strong class="text-primary">{{student.studentCode}}</strong></td>
+                            <td>{{student.fullName}}</td>
+                            <td>{{student.dateOfBirth | date:'dd/MM/yyyy'}}</td>
+                            <td>
+                                <span class="text-center">
+                                    {{student.gender}}
+                                </span>
+                            </td>
+                            <td>
+                                <a href="mailto:{{student.email}}">{{student.email}}</a>
+                            </td>
+                            <td>{{student.phone}}</td>
+                            <td class="text-center">
+                                <button class="btn btn-sm btn-primary"
+                                        ng-click="actions.viewStudent(student.studentId)"
+                                        title="Xem chi tiết">
+                                    <i class="fas fa-eye"></i> Chi tiết
+                                </button>
+                            </td>
+                        </tr>
+                        <tr ng-show="filteredStudents.length === 0">
+                            <td colspan="8" class="text-center text-muted py-5">
+                                <i class="fas fa-inbox fa-3x mb-3"></i>
+                                <p class="mb-0">Không có sinh viên nào trong lớp này</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .table th {
+        background-color: #007bff;
+        color: white;
+        font-weight: 600;
+    }
+
+    .btn-sm {
+        padding: 0.25rem 0.5rem;
+    }
+
+    .card {
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        border: none;
+    }
+
+    .badge {
+        font-size: 0.85rem;
+        padding: 0.35rem 0.65rem;
+    }
+
+    
+</style>

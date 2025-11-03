@@ -1,0 +1,14 @@
+﻿<div ng-app="StudentManagementApp" ng-controller="LoginController">
+    <h2>Đăng nhập hệ thống</h2>
+    <form ng-submit="login()">
+        <div>
+            <label>Tài khoản:</label>
+            <input type="text" ng-model="loginModel.username" />
+        </div>
+        <div>
+            <label>Mật khẩu:</label>
+            <input type="password" ng-model="loginModel.password" />
+        </div>
+        <button type="submit">Đăng nhập</button>
+    </form>
+</div>
