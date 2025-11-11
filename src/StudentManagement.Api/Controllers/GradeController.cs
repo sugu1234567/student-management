@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using StudentManagement.Api.Services;
 using StudentManagement.Core.DTOs.Request;
 using StudentManagement.Core.Interfaces;
 using StudentManagement.Core.Models;
@@ -41,7 +42,7 @@ public class GradeController : BaseController
     {
         try
         {
-            var result = _gradeService.Delete(id);
+            var result = _gradeService.Delete(id, userId, role);
             if (result.Success)
             {
                 return Ok(result);
@@ -54,12 +55,12 @@ public class GradeController : BaseController
         }
     }
 
-    [HttpGet("by-teacher")]
-    public IActionResult GetByStudent()
+    [HttpGet("all")]
+    public IActionResult GetAll()
     {
         try
         {
-            var result = _gradeService.GetByTeacher(userId, role);
+            var result = _gradeService.GetAll(userId, role);
             return Ok(result);
         }
         catch (Exception ex)
@@ -68,12 +69,54 @@ public class GradeController : BaseController
         }
     }
 
-    [HttpGet("by-student/{studentId}")]
-    public IActionResult GetByStudent(int studentId)
+    //[HttpGet("by-student/{studentId}")]
+    //public IActionResult GetByStudent(int studentId)
+    //{
+    //    try
+    //    {
+    //        var result = _gradeService.GetByStudent(studentId);
+    //        return Ok(result);
+    //    }
+    //    catch (Exception ex)
+    //    {
+    //        return StatusCode(500, new { success = false, message = ex.Message });
+    //    }
+    //}
+
+    //[HttpGet("by-subject/{subjectId}")]
+    //public IActionResult GetBySubject(int subjectId)
+    //{
+    //    try
+    //    {
+    //        var result = _gradeService.GetBySubject(subjectId);
+    //        return Ok(result);
+    //    }
+    //    catch (Exception ex)
+    //    {
+    //        return StatusCode(500, new { success = false, message = ex.Message });
+    //    }
+    //}
+
+    //[HttpGet("by-class/{classId}")]
+    //public IActionResult GetByClass(int classId)
+    //{
+    //    try
+    //    {
+    //        var result = _gradeService.GetByClass(classId);
+    //        return Ok(result);
+    //    }
+    //    catch (Exception ex)
+    //    {
+    //        return StatusCode(500, new { success = false, message = ex.Message });
+    //    }
+    //}
+
+    [HttpGet("search")]
+    public IActionResult Search([FromQuery] string? keyword, [FromQuery] int? classId, [FromQuery] int? studentId, [FromQuery] int? subjectId)
     {
         try
         {
-            var result = _gradeService.GetByStudent(studentId);
+            var result = _gradeService.Search(keyword, classId, studentId, subjectId);
             return Ok(result);
         }
         catch (Exception ex)
@@ -82,31 +125,4 @@ public class GradeController : BaseController
         }
     }
 
-    [HttpGet("by-subject/{subjectId}")]
-    public IActionResult GetBySubject(int subjectId)
-    {
-        try
-        {
-            var result = _gradeService.GetBySubject(subjectId);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new { success = false, message = ex.Message });
-        }
-    }
-
-    [HttpGet("by-class/{classId}")]
-    public IActionResult GetByClass(int classId)
-    {
-        try
-        {
-            var result = _gradeService.GetByClass(classId);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new { success = false, message = ex.Message });
-        }
-    }
 }

@@ -65,7 +65,17 @@
             $service.get(url)
                 .then(function (response) {
                     if (response.data.success) {
-                        $scope.students = response.data.data;
+                        $scope.students = response.data.data.map(function (student) {
+                            if (student.gender === 1) {
+                                student.gender = 'Nam';
+                            } else if (student.gender === 2) {
+                                student.gender = 'Nữ';
+                            } else {
+                                student.gender = 'Khác';
+                            }
+                            return student;
+                        });
+
                         $scope.filteredStudents = $scope.students;
                     } else {
                         ToastService.error('Lỗi: ' + response.data.message);
@@ -104,24 +114,24 @@
                 });
         },
 
-        getStudentsByClass: function (classId) {
-            $scope.loading = true;
-            const url = `/api/Student/by-class/${classId}?userId=${$scope.userId}&role=${$scope.role}`;
-            $service.get(url)
-                .then(function (response) {
-                    if (response.data.success) {
-                        $scope.filteredStudents = response.data.data;
-                    } else {
-                        ToastService.error('Lỗi: ' + response.data.message);
-                    }
-                })
-                .catch(function (error) {
-                    ToastService.error('Không thể tải sinh viên theo lớp');
-                })
-                .finally(function () {
-                    $scope.loading = false;
-                });
-        },
+        //getStudentsByClass: function (classId) {
+        //    $scope.loading = true;
+        //    const url = `/api/Student/by-class/${classId}?userId=${$scope.userId}&role=${$scope.role}`;
+        //    $service.get(url)
+        //        .then(function (response) {
+        //            if (response.data.success) {
+        //                $scope.filteredStudents = response.data.data;
+        //            } else {
+        //                ToastService.error('Lỗi: ' + response.data.message);
+        //            }
+        //        })
+        //        .catch(function (error) {
+        //            ToastService.error('Không thể tải sinh viên theo lớp');
+        //        })
+        //        .finally(function () {
+        //            $scope.loading = false;
+        //        });
+        //},
 
         // Tìm kiếm sinh viên
         searchStudents: function (keyword, classId, departmentId) {
@@ -357,7 +367,7 @@
         // Lọc theo lớp
         filterByClass: function () {
             if ($scope.searchClassId) {
-                $scope.buildin.getStudentsByClass($scope.searchClassId);
+                $scope.buildin.searchStudents($scope.searchClassId);
                 $scope.currentPage = 1;
             } else {
                 $scope.actions.search();

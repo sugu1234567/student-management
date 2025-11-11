@@ -63,12 +63,12 @@ public class GradeService : IGradeService
         }
     }
 
-    public BaseResponse Delete(int gradeId)
+    public BaseResponse Delete(int gradeId, int userId, int role)
     {
         try
         {
             var procedure = StoredProcedures.PRC_GRADE_DELETE;
-            var result = _repository.ExecuteNonQuery(procedure, new { GradeId = gradeId }, CommandType.StoredProcedure);
+            var result = _repository.ExecuteNonQuery(procedure, new { GradeId = gradeId, UserId = userId, Role = role}, CommandType.StoredProcedure);
             return result;
         }
         catch (Exception ex)
@@ -100,11 +100,11 @@ public class GradeService : IGradeService
     }
 
 
-    public QueryResponse<GradeModel> GetByTeacher(int userId, int role)
+    public QueryResponse<GradeModel> GetAll(int userId, int role)
     {
         try
         {
-            var procedure = StoredProcedures.PRC_GRADE_GET_BY_TEACHER;
+            var procedure = StoredProcedures.PRC_GRADE_GET_ALL;
             
             var result = _repository.ExecuteQuery<GradeModel>(procedure, new 
             {
@@ -142,6 +142,30 @@ public class GradeService : IGradeService
         }
     }
 
+    public QueryResponse<GradeModel> Search(string? keyword, int? classId, int? studentId, int? subjectId)
+    {
+        try
+        {
+            var procedure = StoredProcedures.PRC_GRADE_SEARCH;
+            return _repository.ExecuteQuery<GradeModel>(procedure, new 
+            { 
+                Keyword = keyword,
+                ClassId = classId,
+                StudentId = studentId,
+                SubjectId = subjectId
+            }, CommandType.StoredProcedure);
+        }
+        catch (Exception ex)
+        {
+            return new QueryResponse<GradeModel>
+            {
+                Success = false,
+                Message = $"Error getting grades: {ex.Message}",
+                Data = new List<GradeModel>()
+            };
+        }
+    }
+
     public QueryResponse<GradeModel> GetByClass(int classId)
     {
         try
@@ -167,5 +191,10 @@ public class GradeService : IGradeService
         if (score >= 7.0m) return 3; // Fair
         if (score >= 5.5m) return 4; // Average
         return 5; // Poor
+    }
+
+    public QueryResponse<GradeModel> GetByTeacher(int userId, int role)
+    {
+        throw new NotImplementedException();
     }
 }

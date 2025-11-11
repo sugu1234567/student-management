@@ -20,39 +20,44 @@
         <div class="card-body">
             <div class="row">
                 <div class="col-md-3">
-                    <label class="form-label">Lọc theo Lớp:</label>
-                    <select class="form-select"
-                            ng-model="filterClassId"
-                            ng-change="actions.filterGrades()">
-                        <option value="">-- Tất cả lớp --</option>
-                        <option ng-repeat="class in classes" value="{{class.classId}}">
-                            {{class.className}}
-                        </option>
-                    </select>
+                    <label class="form-label">Tìm kiếm:</label>
+                    <div class="input-group">
+                        <input type="text"
+                               class="form-control"
+                               ng-model="searchKeyword"
+                               placeholder="Tên, mã SV..."
+                               ng-keypress="$event.keyCode == 13 && actions.search()">
+                        <button class="btn btn-outline-secondary"
+                                ng-click="actions.search()"
+                                ng-disabled="loading">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">Lọc theo Môn học:</label>
+                    <label class="form-label">Môn học:</label>
                     <select class="form-select"
-                            ng-model="filterSubjectId"
-                            ng-change="actions.filterGrades()">
-                        <option value="">-- Tất cả môn học --</option>
-                        <option ng-repeat="subject in subjects" value="{{subject.subjectId}}">
+                            ng-model="searchSubjectId"
+                            ng-change="actions.search()">
+                        <option value="">-- Tất cả --</option>
+                        <option ng-repeat="subject in subjects" ng-value="subject.subjectId">
                             {{subject.subjectName}}
                         </option>
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">Lọc theo Sinh viên:</label>
+                    <label class="form-label">Lớp:</label>
                     <select class="form-select"
-                            ng-model="filterStudentId"
-                            ng-change="actions.filterGrades()">
-                        <option value="">-- Tất cả sinh viên --</option>
-                        <option ng-repeat="student in students" value="{{student.studentId}}">
-                            {{student.fullName}} ({{student.studentCode}})
+                            ng-model="searchClassId"
+                            ng-change="actions.search()">
+                        <option value="">-- Tất cả --</option>
+                        <option ng-repeat="class in classes"
+                                ng-value="class.classId">
+                            {{class.className}}
                         </option>
                     </select>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label class="form-label">&nbsp;</label>
                     <button class="btn btn-secondary w-100" ng-click="actions.refresh()" ng-disabled="loading">
                         <i class="fas fa-sync-alt"></i> Làm mới
@@ -80,10 +85,11 @@
                             <th style="width: 5%">STT</th>
                             <th style="width: 15%">Mã SV</th>
                             <th style="width: 20%">Họ tên</th>
-                            <th style="width: 20%">Môn học</th>
-                            <th style="width: 10%">Điểm</th>
-                            <th style="width: 10%">Xếp loại</th>
-                            <th style="width: 10%" class="text-center">Thao tác</th>
+                            <th style="width: 15%">Lớp</th>
+                            <th style="width: 15%">Môn học</th>
+                            <th style="width: 8%">Điểm</th>
+                            <th style="width: 12%">Xếp loại</th>
+                            <th style="width: 10%" ng-if="canEdit()" class="text-center">Thao tác</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -91,37 +97,42 @@
                             <td>{{$index + 1}}</td>
                             <td><strong>{{grade.studentCode}}</strong></td>
                             <td>{{grade.studentName}}</td>
+                            <td>{{grade.className}}</td>
                             <td>{{grade.subjectName}}</td>
-                            <td>{{grade.score}}</td>
-
                             <td>
-                                <span class="badge bg-{{actions.getGradeRank(grade.score).class}}">
-                                    {{actions.getGradeRank(grade.score).text}}
-                                </span>
+                                <strong class="text-primary">{{grade.score | number:1}}</strong>
                             </td>
-                            <td class="text-center">
+                            <td>
+                                <span class="badge"
+                                      ng-class="{
+                                          'bg-success': grade.classification === 1,
+                                          'bg-info': grade.classification === 2,
+                                          'bg-primary': grade.classification === 3,
+                                          'bg-warning': grade.classification === 4,
+                                          'bg-danger': grade.classification === 5
+                                      }">
+                                    {{getClassificationName(grade.classification)}}
+                                </span>
+                                <div class="text-muted small">
+                                    HK{{grade.semester}} - {{grade.academicYear}}
+                                </div>
+                            </td>
+                            <td class="text-center" ng-if="role === 1 || role === 2">
                                 <button class="btn btn-sm btn-info"
-                                        ng-if="role === 1 || role === 2"
                                         ng-click="actions.openEditForm(grade)"
                                         title="Sửa">
                                     <i class="fas fa-edit"></i>
                                 </button>
                                 <button class="btn btn-sm btn-danger ms-1"
-                                        ng-if="role === 1 || role === 2"
                                         ng-click="actions.delete(grade.gradeId)"
+                                        ng-disabled="loading"
                                         title="Xóa">
                                     <i class="fas fa-trash"></i>
-                                </button>
-
-                                <button class="btn btn-sm btn-primary"
-                                        ng-click="actions.viewDetail(grade.gradeId)"
-                                        title="Xem chi tiết">
-                                    <i class="fas fa-eye"></i>
                                 </button>
                             </td>
                         </tr>
                         <tr ng-show="grades.length === 0">
-                            <td colspan="9" class="text-center text-muted py-4">
+                            <td ng-attr-colspan="{{(role === 1 || role === 2) ? 8 : 7}}" class="text-center text-muted py-4">
                                 <i class="fas fa-inbox fa-3x mb-3"></i>
                                 <p>Không có dữ liệu điểm</p>
                             </td>
@@ -148,58 +159,94 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Sinh viên <span class="text-danger">*</span></label>
-                                <select class="form-select" ng-model="grade.studentId" required>
-                                    <option value="0">-- Chọn sinh viên --</option>
-                                    <option ng-repeat="student in students" value="{{student.studentId}}">
-                                        {{student.fullName}} ({{student.studentCode}})
-                                    </option>
+                                <select class="form-select"
+                                        ng-model="grade.studentId"
+                                        ng-disabled="isEdit"
+                                        ng-options="student.studentId as (student.fullName + ' (' + student.studentCode + ')') for student in allStudents"
+                                        required>
+                                    <option value="">-- Chọn sinh viên --</option>
                                 </select>
+                                <small class="text-muted" ng-if="isEdit">
+                                    * Không thể thay đổi sinh viên khi sửa điểm
+                                </small>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Môn học <span class="text-danger">*</span></label>
-                                <select class="form-select" ng-model="grade.subjectId" required>
-                                    <option value="0">-- Chọn môn học --</option>
-                                    <option ng-repeat="subject in subjects" value="{{subject.subjectId}}">
-                                        {{subject.subjectName}} ({{subject.subjectCode}})
-                                    </option>
+                                <select class="form-select"
+                                        ng-model="grade.subjectId"
+                                        ng-disabled="isEdit"
+                                        ng-options="subject.subjectId as (subject.subjectName + ' (' + subject.subjectCode + ')') for subject in subjects"
+                                        required>
+                                    <option value="">-- Chọn môn học --</option>
                                 </select>
+                                <small class="text-muted" ng-if="isEdit">
+                                    * Không thể thay đổi môn học khi sửa điểm
+                                </small>
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-md-4 mb-3">
-                                <label class="form-label">Điểm giữa kỳ <span class="text-danger">*</span></label>
+                                <label class="form-label">Điểm <span class="text-danger">*</span></label>
                                 <input type="number"
                                        class="form-control"
-                                       ng-model="grade.midtermScore"
+                                       ng-model="grade.score"
+                                       ng-change="actions.calculateClassification()"
                                        placeholder="0.0"
                                        min="0"
                                        max="10"
                                        step="0.1"
                                        required>
+                                <small class="text-muted">Từ 0 đến 10</small>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label class="form-label">Điểm cuối kỳ <span class="text-danger">*</span></label>
-                                <input type="number"
-                                       class="form-control"
-                                       ng-model="grade.finalScore"
-                                       placeholder="0.0"
-                                       min="0"
-                                       max="10"
-                                       step="0.1"
-                                       required>
+                                <label class="form-label">Xếp loại <span class="text-danger">*</span></label>
+                                <select class="form-select"
+                                        ng-model="grade.classification"
+                                        required>
+                                    <option value="">-- Chọn xếp loại --</option>
+                                    <option ng-repeat="cls in classifications"
+                                            ng-value="cls.value">
+                                        {{cls.label}}
+                                    </option>
+                                </select>
+                                <small class="text-muted">Tự động điền theo điểm</small>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label class="form-label">Điểm trung bình</label>
-                                <input type="text"
-                                       class="form-control"
-                                       ng-model="grade.averageScore"
-                                       readonly
-                                       style="background-color: #e9ecef;">
+                                <label class="form-label">Học kỳ <span class="text-danger">*</span></label>
+                                <select class="form-select" ng-model="grade.semester" required>
+                                    <option value="">-- Chọn học kỳ --</option>
+                                    <option value="1">Học kỳ 1</option>
+                                    <option value="2">Học kỳ 2</option>
+                                    <option value="3">Học kỳ 3 (Hè)</option>
+                                </select>
                             </div>
                         </div>
-                        <div class="alert alert-info mb-0">
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label">Năm học <span class="text-danger">*</span></label>
+                                <input type="text"
+                                       class="form-control"
+                                       ng-model="grade.academicYear"
+                                       placeholder="VD: 2024-2025"
+                                       required>
+                                <small class="text-muted">Định dạng: YYYY-YYYY (VD: 2024-2025)</small>
+                            </div>
+                        </div>
+
+                        <!-- Preview xếp loại -->
+                        <div class="alert alert-info" ng-if="grade.score">
                             <i class="fas fa-info-circle"></i>
-                            <strong>Công thức:</strong> Điểm TB = (Điểm GK × 40%) + (Điểm CK × 60%)
+                            <strong>Xếp loại dự kiến:</strong>
+                            <span class="badge ms-2"
+                                  ng-class="{
+                                      'bg-success': grade.classification === 1,
+                                      'bg-info': grade.classification === 2,
+                                      'bg-primary': grade.classification === 3,
+                                      'bg-warning': grade.classification === 4,
+                                      'bg-danger': grade.classification === 5
+                                  }">
+                                {{getClassificationName(grade.classification)}}
+                            </span>
                         </div>
                     </form>
                 </div>
@@ -207,8 +254,13 @@
                     <button type="button" class="btn btn-secondary" ng-click="actions.cancel()">
                         <i class="fas fa-times"></i> Hủy
                     </button>
-                    <button type="button" class="btn btn-primary" ng-click="actions.save()" ng-disabled="loading">
-                        <i class="fas fa-save"></i> {{isEdit ? 'Cập nhật' : 'Lưu điểm'}}
+                    <button type="button"
+                            class="btn btn-primary"
+                            ng-click="actions.save()"
+                            ng-disabled="loading || gradeForm.$invalid">
+                        <i class="fas fa-save"></i>
+                        <span ng-if="!loading">{{isEdit ? 'Cập nhật' : 'Lưu điểm'}}</span>
+                        <span ng-if="loading">Đang lưu...</span>
                     </button>
                 </div>
             </div>
@@ -235,5 +287,9 @@
     .badge {
         font-size: 0.85rem;
         padding: 0.35rem 0.65rem;
+    }
+
+    .alert-info {
+        border-left: 4px solid #17a2b8;
     }
 </style>

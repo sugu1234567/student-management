@@ -1,0 +1,309 @@
+﻿@{
+    ViewData["Title"] = "Thống kê & Báo cáo";
+}
+
+<div ng-controller="StatisticController">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-chart-bar"></i> Thống kê & Báo cáo</h2>
+        <div>
+            <button class="btn btn-success me-2" ng-click="actions.exportStudentsByClass()">
+                <i class="fas fa-file-excel"></i> Xuất DS Sinh viên
+            </button>
+            <button class="btn btn-success" ng-click="actions.exportGradesByClass()">
+                <i class="fas fa-file-excel"></i> Xuất Bảng điểm
+            </button>
+        </div>
+    </div>
+
+    <!-- Thống kê tổng quan -->
+    <div class="row mb-4">
+        <div class="col-md-3" ng-if="role === 1">
+            <div class="card stat-card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-0">Sinh viên</h6>
+                            <h2 class="mb-0">{{overview.totalStudents || 0}}</h2>
+                        </div>
+                        <i class="fas fa-user-graduate fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3" ng-if="role === 1">
+            <div class="card stat-card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-0">Giáo viên</h6>
+                            <h2 class="mb-0">{{overview.totalTeachers || 0}}</h2>
+                        </div>
+                        <i class="fas fa-chalkboard-teacher fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-0">Lớp học</h6>
+                            <h2 class="mb-0">{{overview.totalClasses || 0}}</h2>
+                        </div>
+                        <i class="fas fa-school fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-0">Môn học</h6>
+                            <h2 class="mb-0">{{overview.totalSubjects || 0}}</h2>
+                        </div>
+                        <i class="fas fa-book fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title mb-3"><i class="fas fa-filter"></i> Bộ lọc</h5>
+            <div class="row">
+                <div class="col-md-3">
+                    <label class="form-label">Lớp:</label>
+                    <select class="form-select" ng-model="filters.classId">
+                        <option value="">-- Tất cả --</option>
+                        <option ng-repeat="class in classes" ng-value="class.classId">
+                            {{class.className}}
+                        </option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Môn học:</label>
+                    <select class="form-select" ng-model="filters.subjectId">
+                        <option value="">-- Tất cả --</option>
+                        <option ng-repeat="subject in subjects" ng-value="subject.subjectId">
+                            {{subject.subjectName}}
+                        </option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Học kỳ:</label>
+                    <select class="form-select" ng-model="filters.semester">
+                        <option value="">-- Tất cả --</option>
+                        <option ng-repeat="sem in semesters" ng-value="sem.value">
+                            {{sem.label}}
+                        </option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Năm học:</label>
+                    <input type="text" class="form-control" ng-model="filters.academicYear" placeholder="2024-2025">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <div>
+                        <button class="btn btn-primary w-100 mb-2" ng-click="actions.applyFilter()">
+                            <i class="fas fa-search"></i> Lọc
+                        </button>
+                        <button class="btn btn-secondary w-100" ng-click="actions.resetFilter()">
+                            <i class="fas fa-redo"></i> Reset
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row 1 -->
+    <div class="row mb-4">
+        <!-- Sinh viên theo lớp -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-users"></i> Sinh viên theo lớp</h5>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Lớp</th>
+                                    <th>Khoa</th>
+                                    <th>GVCN</th>
+                                    <th class="text-end">SL</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr ng-repeat="item in studentsByClass">
+                                    <td><strong>{{item.className}}</strong></td>
+                                    <td>{{item.departmentName}}</td>
+                                    <td>{{item.teacherName}}</td>
+                                    <td class="text-end"><span>{{item.studentCount}}</span></td>
+                                </tr>
+                                <tr ng-show="studentsByClass.length === 0">
+                                    <td colspan="4" class="text-center text-muted">Không có dữ liệu</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sinh viên theo khoa -->
+        <div class="col-md-6" ng-if="role === 1">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-building"></i> Sinh viên theo khoa</h5>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Khoa</th>
+                                    <th class="text-end">Số lớp</th>
+                                    <th class="text-end">Số SV</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr ng-repeat="item in studentsByDepartment">
+                                    <td><strong>{{item.departmentName}}</strong></td>
+                                    <td class="text-end"><span>{{item.classCount}}</span></td>
+                                    <td class="text-end"><span>{{item.studentCount}}</span></td>
+                                </tr>
+                                <tr ng-show="studentsByDepartment.length === 0">
+                                    <td colspan="3" class="text-center text-muted">Không có dữ liệu</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row 2 -->
+    <div class="row mb-4">
+        <!-- Điểm TB theo lớp -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-chart-line"></i> Điểm trung bình theo lớp</h5>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Lớp</th>
+                                    <th class="text-end">Số SV</th>
+                                    <th class="text-end">ĐTB</th>
+                                    <th class="text-end">Tổng điểm</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr ng-repeat="item in avgGradeByClass">
+                                    <td><strong>{{item.className}}</strong></td>
+                                    <td class="text-end">{{item.studentCount}}</td>
+                                    <td class="text-end">
+                                        <span>
+                                            {{item.averageScore | number:2}}
+                                        </span>
+                                    </td>
+                                    <td class="text-end">{{item.totalGrades}}</td>
+                                </tr>
+                                <tr ng-show="avgGradeByClass.length === 0">
+                                    <td colspan="4" class="text-center text-muted">Không có dữ liệu</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Điểm TB theo môn -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-book-open"></i> Điểm trung bình theo môn</h5>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Môn học</th>
+                                    <th class="text-end">Số SV</th>
+                                    <th class="text-end">ĐTB</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr ng-repeat="item in avgGradeBySubject">
+                                    <td>
+                                        <strong>{{item.subjectName}}</strong>
+                                        <br><small class="text-muted">{{item.subjectCode}}</small>
+                                    </td>
+                                    <td class="text-end">{{item.studentCount}}</td>
+                                    <td class="text-end">
+                                        <span>
+                                            {{item.averageScore | number:2}}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr ng-show="avgGradeBySubject.length === 0">
+                                    <td colspan="3" class="text-center text-muted">Không có dữ liệu</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .stat-card {
+        border: none;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        transition: transform 0.2s;
+    }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+
+    .card {
+        border: none;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .card-title {
+        color: #333;
+        font-weight: 600;
+        border-bottom: 2px solid #007bff;
+        padding-bottom: 10px;
+        margin-bottom: 15px;
+    }
+
+    .table th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+        border-bottom: 2px solid #dee2e6;
+    }
+
+    .badge {
+        font-size: 0.875rem;
+        padding: 0.35rem 0.65rem;
+    }
+
+    .opacity-50 {
+        opacity: 0.5;
+    }
+</style>
